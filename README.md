@@ -96,6 +96,46 @@ npm run dev
 ```
 Open `http://localhost:5173` in your browser.
 
+### Deploy to Render and Streamlit Community Cloud
+
+**You do not need a second GitHub repository, and you do not need to upload folders or files manually.** Push the whole project, including `streamlit_app.py`, to this one GitHub repository. Then create two separate hosted services from that same repository:
+
+- Render runs the **FastAPI backend** from `backend/main.py`.
+- Streamlit Community Cloud runs the **Streamlit frontend** from the root-level `streamlit_app.py`.
+
+#### 1. Push the project to GitHub
+
+Commit and push the project changes to the GitHub repository you want to deploy. Make sure `render.yaml`, the root `requirements.txt`, and `streamlit_app.py` are included. Never commit `.env` files or API keys.
+
+#### 2. Deploy the FastAPI backend on Render
+
+1. Sign in to Render and choose **New → Blueprint**.
+2. Connect the **same GitHub repository** that contains this project and select the branch to deploy.
+3. Render will read the root-level `render.yaml` and create the `buildintel-api` web service. Leave its root directory at the repository root; the configured commands install `backend/requirements.txt` and start `backend.main:app`.
+4. In the service's **Environment** settings, add `GOOGLE_API_KEY` with your active Gemini API key. Add it as a secret/private environment variable; do not put it in GitHub or in `render.yaml`.
+5. Deploy the service. When it is live, copy its public service URL, for example `https://buildintel-api.onrender.com`.
+6. Confirm the backend responds by opening `https://<your-render-service-url>/api/health`. Keep the base URL (without `/api/health`) for the next step.
+
+#### 3. Deploy the Streamlit frontend on Streamlit Community Cloud
+
+1. Sign in to [Streamlit Community Cloud](https://share.streamlit.io/) and choose **Create app**.
+2. Select the **same GitHub repository and branch** used above.
+3. Set **Main file path** to `streamlit_app.py` (it is at the repository root, not inside `backend` or `frontend`).
+4. Open **Advanced settings** before deploying. Add this to the **Secrets** field, replacing the example URL with the Render URL copied above:
+
+   ```toml
+   API_BASE_URL = "https://your-api-service.onrender.com"
+   ```
+
+5. Choose **Deploy**. Streamlit Community Cloud will install the root `requirements.txt` and start `streamlit_app.py`.
+6. Open the Streamlit app. Use **Check API connection** in the sidebar. If the check succeeds, the Streamlit frontend is connected to your Render backend.
+
+If you prefer, you can enter the Render API URL directly in the Streamlit app sidebar instead of setting `API_BASE_URL` in Streamlit secrets.
+
+#### Local development
+
+Install dependencies from the repository root with `pip install -r requirements.txt`. In one terminal, start FastAPI with `uvicorn backend.main:app --host 127.0.0.1 --port 8000`; in another, run `streamlit run streamlit_app.py`. Enter `http://localhost:8000` in the app's **FastAPI base URL** sidebar field. Set `GOOGLE_API_KEY` in your local environment if you want to enable Gemini features.
+
 ---
 
 ## 🧪 Automated Testing & Validation
